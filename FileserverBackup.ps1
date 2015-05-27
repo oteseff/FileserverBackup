@@ -30,6 +30,9 @@ $SMTPServer = "relay.company.com"
 $SMTPPort = "25"
 $SMTPClient = New-Object Net.Mail.SmtpClient($SmtpServer, $SMTPPort)
 
+# Reset archive bit (required workaround for Windows 2012/8 robocopy)
+attrib -a $($Source)*.* /S /D
+
 # Run robocopy backup
 robocopy $Source $Destination /MIR /COPY:DAT /M /MT:32 /V /W:1 /R:0 /NP /TS /BYTES /XF ".DS_Store" ".apdisk" ".TemporaryItems" "Thumbs.db" /XD "$($Source)`$RECYCLE.BIN" "$($Source)System Volume Information" /LOG:"C:\Logs\backup_report.log"
 
