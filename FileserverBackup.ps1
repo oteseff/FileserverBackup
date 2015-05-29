@@ -36,11 +36,9 @@ attrib -a $($Source)*.* /S /D
 # Run robocopy backup
 robocopy $Source $Destination /MIR /COPY:DAT /M /MT:32 /V /W:1 /R:0 /NP /TS /BYTES /XF ".DS_Store" ".apdisk" ".TemporaryItems" "Thumbs.db" /XD "$($Source)`$RECYCLE.BIN" "$($Source)System Volume Information" /LOG:"C:\Logs\backup_report.log"
 
-# Copy log to share
-Copy-Item "C:\Logs\backup_report.log" $LogFileLocation$LogFilename.log
-
-# Update log filename and send e-mail
+# Update log filename, copy to share and send e-mail
 if (($LastExitCode -eq 0) -or ($LastExitCode -eq 1)){
+    Copy-Item "C:\Logs\backup_report.log" $LogFileLocation$LogFilename.log
     Rename-Item -Path "$LogFileLocation$LogFilename.log" -NewName "$($LogFilename)_SUCCESSFUL.log"
     $EmailSubject += " Successfully."
     $Message = New-Object Net.Mail.MailMessage($EmailFrom, $EmailTo, $EmailSubject, $EmailBody)
@@ -49,6 +47,7 @@ if (($LastExitCode -eq 0) -or ($LastExitCode -eq 1)){
     $SMTPClient.Send($Message)
 }
 else {
+    Copy-Item "C:\Logs\backup_report.log" $LogFileLocation$LogFilename.log
     Rename-Item -Path "$LogFileLocation$LogFilename.log" -NewName "$($LogFileLocation)$($LogFilename)_FAILED.log"
     $EmailSubject += " with Errors."
     $Message = New-Object Net.Mail.MailMessage($EmailFrom, $EmailTo, $EmailSubject, $EmailBody)
