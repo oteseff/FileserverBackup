@@ -19,7 +19,7 @@ Edited by Jeff Seto (jeff.seto@hogarthww.com)
 $Source = "E:\"
 $Computer = hostname
 $Destination = "\\server\Backup\$Computer\"
-$Date = Get-Date -Format "yyyy-MM-dd"
+$Date = Get-Date -Format "yyyy-MM-dd_HH-mm-ss"
 $LogFileLocation = "\\server\Backup\Logs\$Computer\"
 $LogFilename = "BackupLog_$($Date)"
 $EmailFrom = "Backup@company.com"
@@ -31,7 +31,7 @@ $SMTPPort = "25"
 $SMTPClient = New-Object Net.Mail.SmtpClient($SmtpServer, $SMTPPort)
 
 # Reset archive bit (required workaround for Windows 2012/8 robocopy)
-attrib -a $($Source)*.* /S /D
+attrib -a "$($Source)*.*" /S /D
 
 # Run robocopy backup
 robocopy $Source $Destination /MIR /COPY:DAT /M /MT:32 /V /W:1 /R:0 /NP /TS /BYTES /XF ".DS_Store" ".apdisk" ".TemporaryItems" "Thumbs.db" /XD "$($Source)`$RECYCLE.BIN" "$($Source)System Volume Information" /LOG:"C:\Logs\backup_report.log"
@@ -41,17 +41,15 @@ if (($LastExitCode -eq 0) -or ($LastExitCode -eq 1)){
     Copy-Item "C:\Logs\backup_report.log" $LogFileLocation$LogFilename.log
     Rename-Item -Path "$LogFileLocation$LogFilename.log" -NewName "$($LogFilename)_SUCCESSFUL.log"
     $EmailSubject += " Successfully."
+    $EmailBody += "`r`n`r`nLog file: $LogFileLocation$($LogFilename)_SUCCESSFUL.log"
     $Message = New-Object Net.Mail.MailMessage($EmailFrom, $EmailTo, $EmailSubject, $EmailBody)
-    $Attachment = New-Object Net.Mail.Attachment("$($LogFileLocation)$($LogFilename)_SUCCESSFUL.log", 'text/plain')
-    $Message.Attachments.Add($Attachment)
     $SMTPClient.Send($Message)
 }
 else {
     Copy-Item "C:\Logs\backup_report.log" $LogFileLocation$LogFilename.log
     Rename-Item -Path "$LogFileLocation$LogFilename.log" -NewName "$($LogFileLocation)$($LogFilename)_FAILED.log"
     $EmailSubject += " with Errors."
+    $EmailBody += "`r`n`r`nLog file: $LogFileLocation$($LogFilename)_FAILED.log"
     $Message = New-Object Net.Mail.MailMessage($EmailFrom, $EmailTo, $EmailSubject, $EmailBody)
-    $Attachment = New-Object Net.Mail.Attachment("$($LogFileLocation)$($Logfilename)_FAILED.log", 'text/plain')
-    $Message.Attachments.Add($Attachment)
     $SMTPClient.Send($Message)
 }
